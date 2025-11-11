@@ -9,11 +9,7 @@
                 <div class="cb-logo">CB</div>
                 <span>CiscoBot</span>
             </div>
-            <nav class="cb-links">
-                <a href="{{ url('/') }}">Inicio</a>
-                <a href="{{ url('/docs') }}">Documentación</a>
-                <a href="{{ url('/ayuda') }}">Ayuda</a>
-            </nav>
+
         </header>
 
         <div class="cb-headline">
