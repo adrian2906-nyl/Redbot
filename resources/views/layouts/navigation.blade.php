@@ -1,4 +1,5 @@
-<nav x-data="{ open: false }" class="bg-transparent border-0 text-white">
+<nav x-data="{ open: false }" class="bg-gradient-to-r from-sky-500 via-indigo-600 to-violet-600 border-0 text-white shadow-md">
+
 
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
