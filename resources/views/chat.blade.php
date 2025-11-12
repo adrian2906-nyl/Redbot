@@ -108,7 +108,7 @@
         scrollToBottom();
     };
 
-    // 🔹 copiar texto
+    // Copiar texto
     messages.addEventListener('click', (e) => {
         if (e.target.classList.contains('copy')) {
             const text = e.target.closest('.group').innerText.trim();
@@ -139,7 +139,7 @@
         a.click();
     });
 
-    // 🔹 ESTE ES EL BLOQUE CLAVE: CONEXIÓN CON API BACKEND
+    // 🔹 Conexión con backend
     composer.addEventListener('submit', async (e) => {
         e.preventDefault();
         const q = prompt.value.trim();
@@ -148,7 +148,6 @@
         bubble('me', `<p class="whitespace-pre-wrap">${q}</p>`);
         prompt.value = '';
 
-        // 🌀 Mensaje de carga
         const loading = document.createElement('div');
         loading.className = "flex items-start gap-3";
         loading.innerHTML = `
@@ -169,8 +168,6 @@
             });
 
             const data = await res.json();
-            console.log("Respuesta del servidor:", res.status, data); // 🔍 debug
-
             loading.remove();
 
             if (res.ok) {
@@ -190,15 +187,14 @@
             }
         } catch (err) {
             loading.remove();
-            console.error(err);
             bubble('bot', `<p class="text-red-500">⚠️ Error al conectar con el servidor.</p>`);
         }
     });
 </script>
 @endpush
 
-    <style>
-        pre { white-space: pre-wrap; }
-        code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    </style>
+<style>
+    pre { white-space: pre-wrap; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+</style>
 </x-app-layout>
