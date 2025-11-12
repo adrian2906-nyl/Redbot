@@ -49,10 +49,10 @@
                     <!-- Composer -->
                     <div class="border-t border-gray-200 bg-white/70 p-3">
                         <div class="flex flex-wrap gap-2 px-1 pb-2">
-                            <button class="chip" data-fill="crear vlan 10 en puertos gi0/1-2">VLAN 10</button>
-                            <button class="chip" data-fill="asignar ip 192.168.10.1/24 a interfaz vlan 10">IP Vlan</button>
-                            <button class="chip" data-fill="habilitar trunk en gi0/1 allowed 10,20 nativo 10">Trunk</button>
-                            <button class="chip" data-fill="configurar dhcp pool ventas 192.168.20.0/24 gateway 192.168.20.1">DHCP</button>
+                            <button class="chip" type="button" data-fill="crear vlan 10 en puertos gi0/1-2">VLAN 10</button>
+                            <button class="chip" type="button" data-fill="asignar ip 192.168.10.1/24 a interfaz vlan 10">IP Vlan</button>
+                            <button class="chip" type="button" data-fill="habilitar trunk en gi0/1 allowed 10,20 nativo 10">Trunk</button>
+                            <button class="chip" type="button" data-fill="configurar dhcp pool ventas 192.168.20.0/24 gateway 192.168.20.1">DHCP</button>
                         </div>
 
                         <form id="composer" class="flex gap-3">
@@ -76,125 +76,196 @@
     </div>
 
     @push('scripts')
-<script>
-    const messages = document.getElementById('messages');
-    const composer = document.getElementById('composer');
-    const prompt   = document.getElementById('prompt');
-    const clearBtn = document.getElementById('clearBtn');
-    const exportBtn= document.getElementById('exportBtn');
-    const toBottom = document.getElementById('toBottom');
+    <script>
+    (function(){
+        const messages = document.getElementById('messages');
+        const composer = document.getElementById('composer');
+        const prompt   = document.getElementById('prompt');
+        const clearBtn = document.getElementById('clearBtn');
+        const exportBtn= document.getElementById('exportBtn');
+        const toBottom = document.getElementById('toBottom');
 
-    const scrollToBottom = (smooth=true) => {
-        messages.scrollTo({ top: messages.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
-    };
+        const escapeHTML = (str) => str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
 
-    const bubble = (side, html) => {
-        const wrap = document.createElement('div');
-        wrap.className = `flex items-start gap-3 ${side === 'me' ? 'justify-end' : ''}`;
-        const avatar = side === 'me'
-            ? '<div class="shrink-0 h-9 w-9 rounded-full bg-indigo-300 flex items-center justify-center">👤</div>'
-            : '<div class="shrink-0 h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700">🤖</div>';
-        const base = side === 'me' ? 'bg-indigo-100 text-gray-800' : 'bg-white text-gray-800';
-        wrap.innerHTML = `
-            ${side === 'me' ? '' : avatar}
-            <div class="max-w-[85%] md:max-w-[70%] rounded-2xl ${base} px-4 py-3 shadow-sm group">
-                ${html}
-                <div class="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                    <button class="copy px-2 py-1 text-xs rounded bg-black/5">Copiar</button>
-                </div>
-            </div>
-            ${side === 'me' ? avatar : ''}`;
-        messages.appendChild(wrap);
-        scrollToBottom();
-    };
+        const scrollToBottom = (smooth=true) => {
+            messages.scrollTo({ top: messages.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+        };
 
-    // Copiar texto
-    messages.addEventListener('click', (e) => {
-        if (e.target.classList.contains('copy')) {
-            const text = e.target.closest('.group').innerText.trim();
-            navigator.clipboard.writeText(text);
-            e.target.textContent = 'Copiado';
-            setTimeout(()=> e.target.textContent = 'Copiar', 1200);
-        }
-    });
+        const bubble = (side, {html=null, text=null}) => {
+            const wrap = document.createElement('div');
+            wrap.className = `flex items-start gap-3 ${side === 'me' ? 'justify-end' : ''}`;
 
-    messages.addEventListener('scroll', () => {
-        const nearBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 60;
-        toBottom.classList.toggle('hidden', nearBottom);
-    });
-    toBottom.addEventListener('click', () => scrollToBottom());
+            const avatar = side === 'me'
+                ? '<div class="shrink-0 h-9 w-9 rounded-full bg-indigo-300 flex items-center justify-center">👤</div>'
+                : '<div class="shrink-0 h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700">🤖</div>';
 
-    document.querySelectorAll('.chip').forEach(ch => {
-        ch.className = "px-3 py-1 rounded-full bg-indigo-100 hover:bg-indigo-200 text-sm text-gray-700 transition";
-        ch.addEventListener('click', () => prompt.value = ch.dataset.fill);
-    });
+            const base = side === 'me' ? 'bg-indigo-100 text-gray-800' : 'bg-white text-gray-800';
 
-    clearBtn.addEventListener('click', () => { messages.innerHTML = ''; });
-    exportBtn.addEventListener('click', () => {
-        const text = messages.innerText.replace(/\n{3,}/g, '\n\n');
-        const blob = new Blob([text], {type: 'text/plain'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'conversacion-ciscobot.txt';
-        a.click();
-    });
+            const container = document.createElement('div');
+            container.className = `max-w-[85%] md:max-w-[70%] rounded-2xl ${base} px-4 py-3 shadow-sm group`;
 
-    // 🔹 Conexión con backend
-    composer.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const q = prompt.value.trim();
-        if (!q) return;
-
-        bubble('me', `<p class="whitespace-pre-wrap">${q}</p>`);
-        prompt.value = '';
-
-        const loading = document.createElement('div');
-        loading.className = "flex items-start gap-3";
-        loading.innerHTML = `
-            <div class="shrink-0 h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700">🤖</div>
-            <div class="max-w-[85%] md:max-w-[70%] rounded-2xl bg-white text-gray-500 px-4 py-3 shadow-sm italic">Pensando...</div>
-        `;
-        messages.appendChild(loading);
-        scrollToBottom();
-
-        try {
-            const res = await fetch("{{ route('chat.cisco') }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
-                },
-                body: JSON.stringify({ pregunta: q })
-            });
-
-            const data = await res.json();
-            loading.remove();
-
-            if (res.ok) {
-                if (data.commands) {
-                    bubble('bot', `
-                        <p class="font-semibold text-indigo-700">Comandos sugeridos:</p>
-                        <pre class="bg-gray-50 border border-gray-200 rounded-lg p-2 mt-1"><code>${data.commands}</code></pre>
-                        <p class="mt-2 text-sm text-gray-600">${data.explanation || ''}</p>
-                    `);
-                } else if (data.respuesta) {
-                    bubble('bot', `<p>${data.respuesta}</p>`);
-                } else {
-                    bubble('bot', `<p class="text-red-500">Respuesta inesperada: ${JSON.stringify(data)}</p>`);
-                }
-            } else {
-                bubble('bot', `<p class="text-red-500">Error ${res.status}: ${data.message || 'No se pudo procesar la respuesta.'}</p>`);
+            if (html != null) {
+                container.innerHTML = html;
+            } else if (text != null) {
+                const p = document.createElement('p');
+                p.className = 'whitespace-pre-wrap';
+                p.textContent = text;
+                container.appendChild(p);
             }
-        } catch (err) {
-            loading.remove();
-            bubble('bot', `<p class="text-red-500">⚠️ Error al conectar con el servidor.</p>`);
-        }
-    });
-</script>
-@endpush
 
-<style>
-    pre { white-space: pre-wrap; }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-</style>
+            const actions = document.createElement('div');
+            actions.className = 'mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition';
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'copy px-2 py-1 text-xs rounded bg-black/5';
+            copyBtn.textContent = 'Copiar';
+            actions.appendChild(copyBtn);
+            container.appendChild(actions);
+
+            wrap.innerHTML = `${side === 'me' ? '' : avatar}`;
+            wrap.appendChild(container);
+            if (side === 'me') wrap.insertAdjacentHTML('beforeend', avatar);
+
+            messages.appendChild(wrap);
+            scrollToBottom();
+        };
+
+        // Copiar texto
+        messages.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('copy')) return;
+            const group = e.target.closest('.group');
+            const code = group.querySelector('code');
+            const txt = code ? code.textContent : group.querySelector('p,pre')?.textContent || group.textContent;
+            navigator.clipboard.writeText(txt.trim()).then(()=>{
+                e.target.textContent = 'Copiado';
+                setTimeout(()=> e.target.textContent = 'Copiar', 1200);
+            });
+        });
+
+        messages.addEventListener('scroll', () => {
+            const nearBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 60;
+            toBottom.classList.toggle('hidden', nearBottom);
+        });
+        toBottom.addEventListener('click', () => scrollToBottom());
+
+        document.querySelectorAll('.chip').forEach(ch => {
+            ch.type = 'button';
+            ch.className = "px-3 py-1 rounded-full bg-indigo-100 hover:bg-indigo-200 text-sm text-gray-700 transition";
+            ch.addEventListener('click', () => prompt.value = ch.dataset.fill);
+        });
+
+        const renderWelcome = () => {
+            const html = `
+                <p class="font-semibold text-indigo-700">CiscoBot</p>
+                <p class="leading-relaxed text-gray-700">
+                    ¡Hola! Soy tu asistente de configuración Cisco.<br>
+                    Dime qué necesitas. Ej.: <span class="font-mono">crear vlan 20 en gi0/1-2</span>
+                </p>`;
+            const wrap = document.createElement('div');
+            wrap.className = 'flex items-start gap-3';
+            wrap.innerHTML = `
+                <div class="shrink-0 h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700">🤖</div>
+                <div class="max-w-[85%] md:max-w-[70%] rounded-2xl bg-white text-gray-800 px-4 py-3 shadow">${html}</div>`;
+            messages.appendChild(wrap);
+        };
+
+        clearBtn.addEventListener('click', () => {
+            messages.innerHTML = '';
+            renderWelcome();
+        });
+
+        exportBtn.addEventListener('click', () => {
+            const parts = [];
+            messages.querySelectorAll('.group').forEach(g=>{
+                const code = g.querySelector('code');
+                if (code) parts.push(code.textContent.trim());
+                else parts.push(g.textContent.replace(/\s+Copiar\s*$/,'').trim());
+            });
+            const text = parts.join('\n\n');
+            const blob = new Blob([text], {type: 'text/plain'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'conversacion-ciscobot.txt';
+            a.click();
+        });
+
+        composer.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const q = prompt.value.trim();
+            if (!q) return;
+
+            bubble('me', { text: q });
+            prompt.value = '';
+
+            const loading = document.createElement('div');
+            loading.className = "flex items-start gap-3";
+            loading.innerHTML = `
+                <div class="shrink-0 h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700">🤖</div>
+                <div class="max-w-[85%] md:max-w-[70%] rounded-2xl bg-white text-gray-500 px-4 py-3 shadow-sm italic">Pensando...</div>
+            `;
+            messages.appendChild(loading);
+            scrollToBottom();
+
+            try {
+                const res = await fetch("{{ route('chat.cisco') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                    },
+                    credentials: "same-origin",
+                    body: JSON.stringify({ pregunta: q })
+                });
+
+                const ctype = res.headers.get('content-type') || '';
+                let data = null;
+                if (ctype.includes('application/json')) {
+                    data = await res.json();
+                } else {
+                    const txt = await res.text();
+                    data = { respuesta: txt };
+                }
+
+                loading.remove();
+
+                if (!res.ok) {
+                    const msg = (data && (data.message || data.error)) || `HTTP ${res.status}`;
+                    bubble('bot', { text: `Error: ${msg}` });
+                    return;
+                }
+
+                if (data.commands) {
+                    const escaped = escapeHTML(String(data.commands));
+                    bubble('bot', {
+                        html: `
+                            <p class="font-semibold text-indigo-700">Comandos sugeridos:</p>
+                            <pre class="bg-gray-50 border border-gray-200 rounded-lg p-2 mt-1 overflow-x-auto"><code>${escaped}</code></pre>
+                            ${data.explanation ? `<p class="mt-2 text-sm text-gray-600">${escapeHTML(String(data.explanation))}</p>` : '' }
+                        `
+                    });
+                } else if (data.respuesta) {
+                    bubble('bot', { text: String(data.respuesta) });
+                } else {
+                    bubble('bot', { text: `Respuesta inesperada: ${JSON.stringify(data)}` });
+                }
+            } catch (err) {
+                loading.remove();
+                bubble('bot', { text: "⚠️ Error al conectar con el servidor." });
+            }
+        });
+    })();
+    </script>
+    @endpush
+
+    <style>
+        pre { white-space: pre-wrap; }
+        code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+    </style>
 </x-app-layout>

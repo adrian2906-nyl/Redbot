@@ -11,27 +11,33 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Scripts -->
+        <!-- Scripts & Styles de Vite -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen">
             @include('layouts.navigation')
 
-           <!-- Page Heading -->
-@isset($header)
-    <header class="bg-transparent shadow-none">
-        <div class="max-w-7xl mx-auto py-0 px-4 sm:px-6 lg:px-8">
-            {{ $header }}
-        </div>
-    </header>
-@endisset
-
+            <!-- Page Heading -->
+            @isset($header)
+                <header class="bg-transparent shadow-none">
+                    <div class="max-w-7xl mx-auto py-0 px-4 sm:px-6 lg:px-8">
+                        {{ $header }}
+                    </div>
+                </header>
+            @endisset
 
             <!-- Page Content -->
             <main>
                 {{ $slot }}
             </main>
         </div>
+
+        <!-- (Opcional) Pila de modales si usas Jetstream -->
+        @stack('modals')
+
+        <!-- 🔹 IMPORTANTE: aquí se imprimen los @push('scripts') de tus vistas -->
+        @stack('scripts')
+
     </body>
 </html>
